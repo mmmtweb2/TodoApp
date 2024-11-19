@@ -1,0 +1,32 @@
+.App {
+  text-align: right;
+  direction: rtl;
+}
+
+.App-header {
+  background-color: #f3f4f6;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+.App-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1f2937;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* טיפוגרפיה */
+@font-face {
+  font-family: 'Assistant';
+  src: url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap');
+}
+
+body {
+  font-family: 'Assistant', sans-serif;
+}
