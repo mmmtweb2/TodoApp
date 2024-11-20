@@ -1,155 +1,174 @@
+// components/auth/Register.jsx
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
-    const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: '',
-        avatar: null
+        confirmPassword: ''
     });
     const [error, setError] = useState('');
-    const { register } = useAuth();
+    const [success, setSuccess] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const { register } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        setSuccess('');
+
+        // בדיקות ולידציה
+        if (formData.password !== formData.confirmPassword) {
+            setError('הסיסמאות אינן תואמות');
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            setError('הסיסמה חייבת להכיל לפחות 6 תווים');
+            return;
+        }
+
         try {
-            await register(formData);
-            navigate('/app');
+            setIsLoading(true);
+            console.log('Attempting registration with:', {
+                name: formData.name,
+                email: formData.email
+            });
+
+            await register({
+                name: formData.name,
+                email: formData.email,
+                password: formData.password
+            });
+
+            // הצגת הודעת הצלחה
+            setSuccess('ההרשמה בוצעה בהצלחה! מעביר אותך להתחברות...');
+
+            // המתנה קצרה לפני הניווט
+            setTimeout(() => {
+                navigate('/login', {
+                    state: {
+                        message: 'ההרשמה הושלמה בהצלחה, אנא התחבר עם פרטי החשבון שלך',
+                        email: formData.email
+                    }
+                });
+            }, 2000);
+
         } catch (err) {
-            setError(err.message);
+            console.error('Registration error:', err);
+            setError(err.message || 'שגיאה בתהליך ההרשמה');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const nextStep = () => {
-        if (step === 1 && !formData.name) {
-            setError('אנא הכנס את שמך');
-            return;
-        }
-        if (step === 2 && !formData.email) {
-            setError('אנא הכנס כתובת אימייל');
-            return;
-        }
-        setError('');
-        setStep(prev => prev + 1);
-    };
-
-    const prevStep = () => {
-        setError('');
-        setStep(prev => prev - 1);
+    const handleChange = (e) => {
+        setFormData(prev => ({
+            ...prev,
+            [e.target.name]: e.target.value
+        }));
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-                {/* התקדמות */}
-                <div className="flex justify-between mb-8">
-                    {[1, 2, 3].map((stepNumber) => (
-                        <div
-                            key={stepNumber}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center
-                                ${step >= stepNumber ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                        >
-                            {stepNumber}
-                        </div>
-                    ))}
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md w-full space-y-8">
+                <div>
+                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                        הרשמה למערכת
+                    </h2>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {step === 1 && (
-                        <div className="space-y-4">
-                            <h2 className="text-2xl font-bold text-center">ברוך הבא!</h2>
-                            <p className="text-gray-600 text-center">איך נוכל לקרוא לך?</p>
+                {error && (
+                    <div className="bg-red-50 text-red-500 p-3 rounded-lg text-center">
+                        {error}
+                    </div>
+                )}
+
+                {success && (
+                    <div className="bg-green-50 text-green-500 p-3 rounded-lg text-center">
+                        {success}
+                    </div>
+                )}
+
+                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                    <div className="rounded-md shadow-sm space-y-4">
+                        <div>
+                            <label htmlFor="name" className="sr-only">שם מלא</label>
                             <input
+                                id="name"
+                                name="name"
                                 type="text"
-                                placeholder="השם שלך"
+                                required
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                autoFocus
+                                onChange={handleChange}
+                                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="שם מלא"
                             />
                         </div>
-                    )}
-
-                    {step === 2 && (
-                        <div className="space-y-4">
-                            <h2 className="text-2xl font-bold text-center">כמעט סיימנו!</h2>
-                            <p className="text-gray-600 text-center">אנחנו צריכים את האימייל שלך</p>
+                        <div>
+                            <label htmlFor="email" className="sr-only">אימייל</label>
                             <input
+                                id="email"
+                                name="email"
                                 type="email"
-                                placeholder="האימייל שלך"
+                                required
                                 value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                autoFocus
+                                onChange={handleChange}
+                                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="כתובת אימייל"
                             />
                         </div>
-                    )}
-
-                    {step === 3 && (
-                        <div className="space-y-4">
-                            <h2 className="text-2xl font-bold text-center">רק עוד צעד אחד!</h2>
-                            <p className="text-gray-600 text-center">בחר סיסמה חזקה</p>
+                        <div>
+                            <label htmlFor="password" className="sr-only">סיסמה</label>
                             <input
+                                id="password"
+                                name="password"
                                 type="password"
-                                placeholder="הסיסמה שלך"
+                                required
                                 value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                autoFocus
+                                onChange={handleChange}
+                                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="סיסמה"
                             />
-                            <div className="text-sm text-gray-500">
-                                הסיסמה חייבת להכיל לפחות 6 תווים
-                            </div>
                         </div>
-                    )}
-
-                    {error && (
-                        <div className="text-red-500 text-center text-sm">
-                            {error}
+                        <div>
+                            <label htmlFor="confirmPassword" className="sr-only">אימות סיסמה</label>
+                            <input
+                                id="confirmPassword"
+                                name="confirmPassword"
+                                type="password"
+                                required
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="אימות סיסמה"
+                            />
                         </div>
-                    )}
+                    </div>
 
-                    <div className="flex justify-between">
-                        {step > 1 && (
-                            <button
-                                type="button"
-                                onClick={prevStep}
-                                className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                            >
-                                חזור
-                            </button>
-                        )}
-                        {step < 3 ? (
-                            <button
-                                type="button"
-                                onClick={nextStep}
-                                className="px-6 py-2 bg-blue-500 text-white rounded-lg 
-                                         hover:bg-blue-600 transition-colors mr-auto"
-                            >
-                                המשך
-                            </button>
-                        ) : (
-                            <button
-                                type="submit"
-                                className="px-6 py-2 bg-blue-500 text-white rounded-lg 
-                                         hover:bg-blue-600 transition-colors mr-auto"
-                            >
-                                סיום הרשמה
-                            </button>
-                        )}
+                    <div>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? 'מבצע רישום...' : 'הרשמה'}
+                        </button>
+                    </div>
+
+                    <div className="text-center">
+                        <Link
+                            to="/login"
+                            className="font-medium text-blue-600 hover:text-blue-500"
+                        >
+                            כבר יש לך חשבון? התחבר כאן
+                        </Link>
                     </div>
                 </form>
-
-                <div className="mt-6 text-center text-sm text-gray-600">
-                    כבר יש לך חשבון?{' '}
-                    <button className="text-blue-500 hover:underline">
-                        התחבר כאן
-                    </button>
-                </div>
             </div>
         </div>
     );

@@ -7,8 +7,10 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const Task = require('../models/Task');
 // הרשמה
+// routes/auth.js - וודא שיש לך את כל הפונקציות האלה
 router.post('/register', async (req, res) => {
     try {
+        console.log('Register request:', req.body);
         const { name, email, password } = req.body;
 
         // בדיקה אם המשתמש קיים
@@ -24,8 +26,8 @@ router.post('/register', async (req, res) => {
             password
         });
 
-        // שמירת המשתמש
         await user.save();
+        console.log('User saved:', user._id);
 
         // יצירת טוקן
         const token = jwt.sign(
@@ -43,8 +45,8 @@ router.post('/register', async (req, res) => {
             }
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'שגיאה בשרת' });
+        console.error('Register error:', err);
+        res.status(500).json({ message: 'שגיאה בתהליך ההרשמה', error: err.message });
     }
 });
 
