@@ -1,12 +1,14 @@
-// api.js
+// src/services/api.js
 import axios from 'axios';
+import config from '../config';
 
+// יצירת מופע axios עם הגדרות בסיסיות
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: config.API_URL,
     timeout: 5000
 });
 
-// לוג מפורט של הבקשות
+// הוספת טוקן לכל בקשה
 api.interceptors.request.use(config => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -20,11 +22,10 @@ api.interceptors.request.use(config => {
     });
     return config;
 }, error => {
-    console.error('Request error:', error);
     return Promise.reject(error);
 });
 
-// טיפול בשגיאות
+// טיפול בתשובות ושגיאות
 api.interceptors.response.use(
     response => {
         console.log('Response received:', {
@@ -37,8 +38,7 @@ api.interceptors.response.use(
         console.error('API Error:', {
             message: error.message,
             response: error.response?.data,
-            status: error.response?.status,
-            config: error.config
+            status: error.response?.status
         });
 
         if (error.response?.status === 401) {
@@ -49,122 +49,110 @@ api.interceptors.response.use(
     }
 );
 
+// אובייקט המכיל את כל הפעולות מול השרת
 export const tasks = {
+    // קבלת כל המשימות
     async getAll() {
         try {
             console.log('Fetching all tasks...');
-            const response = await api.get('/tasks');
-            console.log('GetAll tasks response:', response.data);
+            const response = await api.get(config.ENDPOINTS.TASKS.BASE);
+            console.log('Tasks fetched:', response.data);
             return response;
         } catch (error) {
-            console.error('GetAll tasks error:', error);
+            console.error('Error fetching tasks:', error);
             throw error;
         }
     },
 
+    // קבלת משימות משותפות
     async getSharedWithMe() {
         try {
-            console.log('Fetching shared tasks...');
-            const response = await api.get('/tasks/shared-with-me');
-            console.log('GetSharedWithMe response:', response.data);
+            const response = await api.get(config.ENDPOINTS.TASKS.SHARED);
             return response;
         } catch (error) {
-            console.error('GetSharedWithMe error:', error);
+            console.error('Error fetching shared tasks:', error);
             throw error;
         }
     },
 
+    // יצירת משימה חדשה
     async create(taskData) {
         try {
-            console.log('Creating task with data:', taskData);
-            const response = await api.post('/tasks', taskData);
-            console.log('Create task response:', response.data);
+            const response = await api.post(config.ENDPOINTS.TASKS.BASE, taskData);
             return response;
         } catch (error) {
-            console.error('Create task error:', error);
+            console.error('Error creating task:', error);
             throw error;
         }
     },
 
+    // עדכון משימה
     async update(id, taskData) {
         try {
-            console.log(`Updating task ${id} with data:`, taskData);
-            const response = await api.patch(`/tasks/${id}`, taskData);
-            console.log('Update task response:', response.data);
+            const response = await api.patch(config.ENDPOINTS.TASKS.UPDATE(id), taskData);
             return response;
         } catch (error) {
-            console.error('Update task error:', error);
+            console.error('Error updating task:', error);
             throw error;
         }
     },
 
+    // מחיקת משימה
     async delete(id) {
         try {
-            console.log(`Deleting task ${id}`);
-            const response = await api.delete(`/tasks/${id}`);
-            console.log('Delete task response:', response.data);
+            const response = await api.delete(config.ENDPOINTS.TASKS.DELETE(id));
             return response;
         } catch (error) {
-            console.error('Delete task error:', error);
+            console.error('Error deleting task:', error);
             throw error;
         }
     },
 
+    // שיתוף משימה
     async shareTask(taskId, shareData) {
         try {
-            console.log(`Sharing task ${taskId} with:`, shareData);
-            const response = await api.post(`/tasks/${taskId}/share`, shareData);
-            console.log('Share task response:', response.data);
+            const response = await api.post(config.ENDPOINTS.TASKS.SHARE(taskId), shareData);
             return response;
         } catch (error) {
-            console.error('Share task error:', error);
+            console.error('Error sharing task:', error);
             throw error;
         }
     },
 
+    // עדכון הרשאות שיתוף
     async updateTaskShare(taskId, userId, permission) {
         try {
-            console.log(`Updating share permissions for task ${taskId}, user ${userId}:`, permission);
-            const response = await api.patch(`/tasks/${taskId}/share/${userId}`, { permission });
-            console.log('Update task share response:', response.data);
+            const response = await api.patch(
+                `${config.ENDPOINTS.TASKS.SHARE(taskId)}/${userId}`,
+                { permission }
+            );
             return response;
         } catch (error) {
-            console.error('Update task share error:', error);
+            console.error('Error updating share permissions:', error);
             throw error;
         }
     },
 
+    // הסרת שיתוף
     async removeTaskShare(taskId, userId) {
         try {
-            console.log(`Removing share for task ${taskId}, user ${userId}`);
-            const response = await api.delete(`/tasks/${taskId}/share/${userId}`);
-            console.log('Remove task share response:', response.data);
+            const response = await api.delete(
+                `${config.ENDPOINTS.TASKS.SHARE(taskId)}/${userId}`
+            );
             return response;
         } catch (error) {
-            console.error('Remove task share error:', error);
-            throw error;
-        }
-    },
-
-    async checkPermissions(taskId) {
-        try {
-            console.log(`Checking permissions for task ${taskId}`);
-            const response = await api.get(`/auth/check-permission/${taskId}`);
-            console.log('Check permissions response:', response.data);
-            return response;
-        } catch (error) {
-            console.error('Check permissions error:', error);
+            console.error('Error removing share:', error);
             throw error;
         }
     }
 };
 
+// פעולות אימות
 export const auth = {
+    // התחברות
     async login(email, password) {
         try {
-            console.log('Attempting login for:', email);
-            const response = await api.post('/auth/login', { email, password });
-            console.log('Login response received');
+            const response = await api.post(config.ENDPOINTS.AUTH.LOGIN, { email, password });
             return response;
         } catch (error) {
             console.error('Login error:', error);
@@ -172,11 +160,10 @@ export const auth = {
         }
     },
 
+    // הרשמה
     async register(userData) {
         try {
-            console.log('Attempting registration for:', userData.email);
-            const response = await api.post('/auth/register', userData);
-            console.log('Registration response received');
+            const response = await api.post(config.ENDPOINTS.AUTH.REGISTER, userData);
             return response;
         } catch (error) {
             console.error('Registration error:', error);
@@ -184,23 +171,21 @@ export const auth = {
         }
     },
 
+    // קבלת פרטי המשתמש הנוכחי
     async getMe() {
         try {
-            console.log('Fetching current user data');
-            const response = await api.get('/auth/me');
-            console.log('GetMe response received');
+            const response = await api.get(config.ENDPOINTS.AUTH.ME);
             return response;
         } catch (error) {
-            console.error('GetMe error:', error);
+            console.error('Get user error:', error);
             throw error;
         }
     },
 
+    // עדכון פרטי משתמש
     async updateProfile(userData) {
         try {
-            console.log('Updating user profile');
             const response = await api.patch('/auth/profile', userData);
-            console.log('Update profile response received');
             return response;
         } catch (error) {
             console.error('Update profile error:', error);
@@ -208,11 +193,10 @@ export const auth = {
         }
     },
 
+    // חיפוש משתמשים (לצורך שיתוף)
     async searchUsers(query) {
         try {
-            console.log('Searching users with query:', query);
             const response = await api.get(`/auth/users/search?query=${query}`);
-            console.log('Search users response:', response.data);
             return response;
         } catch (error) {
             console.error('Search users error:', error);

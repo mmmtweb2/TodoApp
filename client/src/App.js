@@ -1,3 +1,4 @@
+// src/App.js
 import React from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { TaskProvider } from './contexts/TaskContext';
@@ -10,7 +11,7 @@ import AddTask from './components/AddTask';
 import CalendarView from './components/CalendarView';
 import Dashboard from './components/Dashboard';
 import DataManagement from './components/DataManagement';
-import { useTasks } from './contexts/TaskContext';
+import config from './config';
 
 // רכיב מוגן שדורש אימות
 const ProtectedRoute = ({ children }) => {
@@ -26,47 +27,6 @@ const ProtectedRoute = ({ children }) => {
   }
 
   return children;
-};
-
-// רכיב תצוגת משימות
-const TasksView = ({ view }) => {
-  const { tasks, sharedTasks } = useTasks();
-  const [showSharedTasks, setShowSharedTasks] = React.useState(false);
-
-  if (view !== 'list') {
-    return null;
-  }
-
-  return (
-    <>
-      <div className="mb-6">
-        <AddTask />
-        <div className="flex justify-between items-center mt-4 mb-2">
-          <div className="flex space-x-4">
-            <button
-              onClick={() => setShowSharedTasks(false)}
-              className={`px-3 py-1 rounded-md ${!showSharedTasks
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-            >
-              המשימות שלי ({tasks.length})
-            </button>
-            <button
-              onClick={() => setShowSharedTasks(true)}
-              className={`px-3 py-1 rounded-md ${showSharedTasks
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-            >
-              משימות משותפות ({sharedTasks.length})
-            </button>
-          </div>
-        </div>
-        <TaskList tasks={showSharedTasks ? sharedTasks : tasks} isShared={showSharedTasks} />
-      </div>
-    </>
-  );
 };
 
 // תוכן ראשי של האפליקציה
@@ -88,7 +48,7 @@ const MainContent = () => {
     <>
       <header className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">ניהול משימות</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{config.APP_NAME}</h1>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">{currentUser?.name}</span>
             <button
@@ -124,7 +84,12 @@ const MainContent = () => {
         </nav>
 
         <ErrorBoundary>
-          <TasksView view={activeView} />
+          {activeView === 'list' && (
+            <>
+              <AddTask />
+              <TaskList />
+            </>
+          )}
           {activeView === 'calendar' && <CalendarView />}
           {activeView === 'dashboard' && <Dashboard />}
         </ErrorBoundary>
@@ -141,8 +106,24 @@ function App() {
         <TaskProvider>
           <div className="min-h-screen bg-gray-50" dir="rtl">
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Route
+                path="/login"
+                element={
+                  <Login
+                    appName={config.APP_NAME}
+                    version={config.VERSION}
+                  />
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <Register
+                    appName={config.APP_NAME}
+                    version={config.VERSION}
+                  />
+                }
+              />
               <Route
                 path="/*"
                 element={
@@ -151,6 +132,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              {/* נתיבים נוספים במידת הצורך */}
             </Routes>
           </div>
         </TaskProvider>

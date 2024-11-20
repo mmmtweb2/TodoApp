@@ -1,7 +1,8 @@
-// TaskContext.jsx
+// src/contexts/TaskContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { tasks as tasksApi } from '../services/api';
 import { useAuth } from './AuthContext';
+import config from '../config';
 
 const TaskContext = createContext();
 
@@ -29,11 +30,6 @@ export const TaskProvider = ({ children }) => {
                 tasksApi.getSharedWithMe()
             ]);
 
-            console.log('Tasks fetched:', {
-                own: ownTasksResponse.data,
-                shared: sharedTasksResponse.data
-            });
-
             setTasks(ownTasksResponse.data);
             setSharedTasks(sharedTasksResponse.data);
         } catch (err) {
@@ -55,7 +51,6 @@ export const TaskProvider = ({ children }) => {
             setTasks(prev => [...prev, response.data]);
             return response.data;
         } catch (err) {
-            console.error('Error adding task:', err);
             throw new Error(err.response?.data?.message || 'שגיאה בהוספת משימה');
         }
     };
@@ -63,9 +58,8 @@ export const TaskProvider = ({ children }) => {
     const updateTask = async (taskId, taskData, action = 'update') => {
         try {
             setError(null);
-            console.log('Updating task:', { taskId, taskData, action });
-
             let response;
+
             switch (action) {
                 case 'share':
                     response = await tasksApi.shareTask(taskId, taskData);
@@ -80,62 +74,22 @@ export const TaskProvider = ({ children }) => {
                     response = await tasksApi.update(taskId, taskData);
             }
 
-            console.log('Update response:', response.data);
-
-            // עדכון הרשימה המתאימה
-            const updateTaskInList = (tasksList, updatedTask) => {
-                return tasksList.map(task =>
-                    task._id === taskId ? updatedTask : task
-                );
-            };
-
             if (response.data.userId === currentUser?.id) {
-                setTasks(prev => updateTaskInList(prev, response.data));
+                setTasks(prev => prev.map(task =>
+                    task._id === taskId ? response.data : task
+                ));
             } else {
-                setSharedTasks(prev => updateTaskInList(prev, response.data));
+                setSharedTasks(prev => prev.map(task =>
+                    task._id === taskId ? response.data : task
+                ));
             }
 
-            await fetchTasks(); // רענון הרשימות
             return response.data;
         } catch (err) {
-            console.error('Error updating task:', err);
             const errorMessage = err.response?.data?.message || 'שגיאה בעדכון המשימה';
             setError(errorMessage);
             throw new Error(errorMessage);
         }
-    };
-
-    const deleteTask = async (taskId, isShared = false) => {
-        try {
-            setError(null);
-            await tasksApi.delete(taskId);
-
-            if (isShared) {
-                setSharedTasks(prev => prev.filter(task => task._id !== taskId));
-            } else {
-                setTasks(prev => prev.filter(task => task._id !== taskId));
-            }
-        } catch (err) {
-            console.error('Error deleting task:', err);
-            throw new Error(err.response?.data?.message || 'שגיאה במחיקת המשימה');
-        }
-    };
-
-    // פונקציות העזר לבדיקת הרשאות
-    const canEditTask = (task) => {
-        if (!currentUser || !task) return false;
-        if (task.userId === currentUser.id) return true;
-
-        const share = task.sharedWith?.find(s => s.userId === currentUser.id);
-        return ['EDIT', 'ADMIN'].includes(share?.permission);
-    };
-
-    const canShareTask = (task) => {
-        if (!currentUser || !task) return false;
-        if (task.userId === currentUser.id) return true;
-
-        const share = task.sharedWith?.find(s => s.userId === currentUser.id);
-        return share?.permission === 'ADMIN';
     };
 
     const value = {
@@ -145,9 +99,6 @@ export const TaskProvider = ({ children }) => {
         error,
         addTask,
         updateTask,
-        deleteTask,
-        canEditTask,
-        canShareTask,
         fetchTasks
     };
 
@@ -165,5 +116,3 @@ export const useTasks = () => {
     }
     return context;
 };
-
-export default TaskContext;
