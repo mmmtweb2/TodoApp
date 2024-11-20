@@ -8,50 +8,81 @@ const Login = () => {
         email: '',
         password: ''
     });
-    const [error, setError] = useState('');
+    const [errors, setErrors] = useState([]);
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuth();
 
-    // קליטת ההודעה מדף ההרשמה
     useEffect(() => {
         if (location.state?.message) {
             setSuccess(location.state.message);
-            setFormData(prev => ({
-                ...prev,
-                email: location.state.email || ''
-            }));
-            // ניקוי ה-state כדי שההודעה לא תופיע שוב ברענון
+            if (location.state.email) {
+                setFormData(prev => ({ ...prev, email: location.state.email }));
+            }
             navigate(location.pathname, { replace: true });
         }
-    }, [location]);
+    }, [location, navigate]);
+
+    const validateForm = () => {
+        const newErrors = [];
+
+        // בדיקת אימייל
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+            newErrors.push('כתובת האימייל אינה תקינה');
+        }
+
+        // בדיקת סיסמה
+        if (!formData.password) {
+            newErrors.push('נא להזין סיסמה');
+        }
+
+        setErrors(newErrors);
+        return newErrors.length === 0;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
+        setErrors([]);
         setSuccess('');
+
+        if (!validateForm()) {
+            return;
+        }
 
         try {
             setIsLoading(true);
-            console.log('Attempting login with email:', formData.email);
+            console.log('Attempting login...');
 
             await login(formData.email, formData.password);
             navigate('/');
         } catch (err) {
             console.error('Login error:', err);
-            setError(err.message || 'שגיאה בהתחברות');
+            if (err.response?.data?.message) {
+                setErrors([err.response.data.message]);
+            } else if (err.message.includes('401')) {
+                setErrors(['פרטי ההתחברות שגויים']);
+            } else {
+                setErrors(['אירעה שגיאה בהתחברות, אנא נסה שוב']);
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [e.target.name]: e.target.value
+            [name]: value
         }));
+
+        // ניקוי שגיאות בעת הקלדה
+        if (errors.length > 0) {
+            setErrors([]);
+        }
     };
 
     return (
@@ -61,24 +92,50 @@ const Login = () => {
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
                         התחברות למערכת
                     </h2>
+                    <p className="mt-2 text-center text-sm text-gray-600">
+                        אין לך חשבון?{' '}
+                        <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+                            הירשם כאן
+                        </Link>
+                    </p>
                 </div>
 
-                {error && (
-                    <div className="bg-red-50 text-red-500 p-3 rounded-lg text-center">
-                        {error}
+                {/* הצגת שגיאות */}
+                {errors.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="mr-3">
+                                <div className="text-sm text-red-700">
+                                    <ul className="list-disc list-inside">
+                                        {errors.map((error, index) => (
+                                            <li key={index}>{error}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
 
+                {/* הודעת הצלחה */}
                 {success && (
-                    <div className="bg-green-50 text-green-500 p-3 rounded-lg text-center">
+                    <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-md">
                         {success}
                     </div>
                 )}
 
+                {/* טופס התחברות */}
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="rounded-md shadow-sm space-y-4">
                         <div>
-                            <label htmlFor="email" className="sr-only">אימייל</label>
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                                כתובת אימייל
+                            </label>
                             <input
                                 id="email"
                                 name="email"
@@ -86,12 +143,16 @@ const Login = () => {
                                 required
                                 value={formData.email}
                                 onChange={handleChange}
-                                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="כתובת אימייל"
+                                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 mt-1"
+                                placeholder="your@email.com"
+                                dir="ltr"
                             />
                         </div>
+
                         <div>
-                            <label htmlFor="password" className="sr-only">סיסמה</label>
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                                סיסמה
+                            </label>
                             <input
                                 id="password"
                                 name="password"
@@ -99,8 +160,9 @@ const Login = () => {
                                 required
                                 value={formData.password}
                                 onChange={handleChange}
-                                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="סיסמה"
+                                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 mt-1"
+                                placeholder="הכנס סיסמה"
+                                dir="ltr"
                             />
                         </div>
                     </div>
@@ -117,10 +179,10 @@ const Login = () => {
 
                     <div className="text-center">
                         <Link
-                            to="/register"
-                            className="font-medium text-blue-600 hover:text-blue-500"
+                            to="/forgot-password"
+                            className="font-medium text-blue-600 hover:text-blue-500 text-sm"
                         >
-                            אין לך חשבון? הירשם כאן
+                            שכחת סיסמה?
                         </Link>
                     </div>
                 </form>
