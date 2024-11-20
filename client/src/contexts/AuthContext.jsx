@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
 
     const checkAuthStatus = async (token) => {
         try {
-            const response = await axios.get('http://localhost:5000/api/auth/me', {
+            const response = await axios.get(process.env.REACT_APP_API_URL, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setCurrentUser(response.data);
