@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { tasks as tasksApi } from '../services/api';
 import { useAuth } from './AuthContext';
-import config from '../config';
+import config from '../config/index';
 
 const TaskContext = createContext();
 

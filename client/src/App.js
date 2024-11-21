@@ -83,6 +83,18 @@ const MainContent = () => {
           </TabButton>
         </nav>
 
+        <TabButton
+          active={activeView === 'data'}
+          onClick={() => setActiveView('data')}
+        >
+          ניהול נתונים
+        </TabButton>
+
+        {/* ... */}
+
+        {activeView === 'data' &&
+          <DataManagement />}
+
         <ErrorBoundary>
           {activeView === 'list' && (
             <>

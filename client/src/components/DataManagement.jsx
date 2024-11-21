@@ -1,34 +1,15 @@
+// client/src/components/DataManagement.jsx
 import React, { useState } from 'react';
 import { useTasks } from '../contexts/TaskContext';
+import { useAuth } from '../contexts/AuthContext';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
 const DataManagement = () => {
     const { tasks, addTask } = useTasks();
+    const { currentUser } = useAuth();
     const [importError, setImportError] = useState('');
-
-    // ייצוא ל-Excel
-    const exportToExcel = () => {
-        const formattedData = tasks.map(task => ({
-            'כותרת': task.title,
-            'תיאור': task.description || '',
-            'סטטוס': translateStatus(task.status),
-            'עדיפות': translatePriority(task.priority),
-            'קטגוריה': translateCategory(task.category),
-            'תאריך יעד': task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '',
-            'שעת יעד': task.dueTime || '',
-            'תתי משימות': task.subTasks ? task.subTasks.length : 0,
-            'הושלם': task.status === 'COMPLETED' ? 'כן' : 'לא'
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(formattedData, {
-            header: ['כותרת', 'תיאור', 'סטטוס', 'עדיפות', 'קטגוריה', 'תאריך יעד', 'שעת יעד', 'תתי משימות', 'הושלם']
-        });
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "משימות");
-        XLSX.writeFile(wb, "משימות.xlsx");
-    };
 
     // ייצוא ל-PDF
     const exportToPDF = () => {
@@ -58,11 +39,38 @@ const DataManagement = () => {
                 halign: 'right'
             },
             headStyles: {
-                fillColor: [66, 139, 202]
+                fillColor: [66, 139, 202],
+                textColor: 255,
+                halign: 'center'
+            },
+            alternateRowStyles: {
+                fillColor: [245, 245, 245]
             }
         });
 
         doc.save('משימות.pdf');
+    };
+
+    // ייצוא ל-Excel
+    const exportToExcel = () => {
+        const formattedData = tasks.map(task => ({
+            'כותרת': task.title,
+            'תיאור': task.description || '',
+            'סטטוס': translateStatus(task.status),
+            'עדיפות': translatePriority(task.priority),
+            'קטגוריה': translateCategory(task.category),
+            'תאריך יעד': task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '',
+            'שעת יעד': task.dueTime || '',
+            'תתי משימות': task.subTasks ? task.subTasks.length : 0,
+            'הושלם': task.status === 'COMPLETED' ? 'כן' : 'לא'
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(formattedData, {
+            header: ['כותרת', 'תיאור', 'סטטוס', 'עדיפות', 'קטגוריה', 'תאריך יעד', 'שעת יעד', 'תתי משימות', 'הושלם']
+        });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "משימות");
+        XLSX.writeFile(wb, "משימות.xlsx");
     };
 
     // ייצוא לגיבוי JSON
@@ -115,7 +123,7 @@ const DataManagement = () => {
         }
     };
 
-    // פונקציות עזר
+    // פונקציות עזר לתרגום
     const translateStatus = (status) => {
         const statusMap = {
             'NOT_STARTED': 'טרם התחיל',
@@ -145,6 +153,7 @@ const DataManagement = () => {
         return categoryMap[category] || category;
     };
 
+    // פונקציות עזר לייבוא
     const importTasks = async (tasksData) => {
         for (const task of tasksData) {
             await addTask(task);
