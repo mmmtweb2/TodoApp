@@ -150,12 +150,13 @@ export const tasks = {
 // פעולות אימות
 export const auth = {
     // התחברות
-    async login(email, password) {
+    register: async (userData) => {
         try {
-            const response = await api.post(config.ENDPOINTS.AUTH.LOGIN, { email, password });
+            const response = await api.post('/auth/register', userData);
+            console.log('API registration response:', response.data);
             return response;
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('API registration error:', error.response?.data || error);
             throw error;
         }
     },

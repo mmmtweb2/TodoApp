@@ -47,13 +47,13 @@ export function AuthProvider({ children }) {
 
     const register = async (userData) => {
         try {
-            setError(null);
+            console.log('Sending registration request:', userData);
             const response = await authApi.register(userData);
+            console.log('Registration response:', response.data);
             return response.data;
         } catch (err) {
-            const errorMessage = err.response?.data?.message || 'שגיאה בתהליך ההרשמה';
-            setError(errorMessage);
-            throw new Error(errorMessage);
+            console.error('Registration error in context:', err.response?.data || err.message);
+            throw err;
         }
     };
 

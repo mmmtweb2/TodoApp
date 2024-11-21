@@ -58,43 +58,22 @@ const Register = () => {
         setErrors([]);
         setSuccess('');
 
-        // בדיקת תקינות
-        if (!validateForm()) {
-            return;
-        }
-
         try {
-            setIsLoading(true);
-            console.log('Attempting registration...');
+            console.log('Registration data:', {
+                name: formData.name,
+                email: formData.email
+            });
 
             await register({
                 name: formData.name,
-                email: formData.email,
+                email: formData.email.toLowerCase(), // וודא אימייל תקין
                 password: formData.password
             });
 
-            setSuccess('ההרשמה בוצעה בהצלחה! מעביר אותך להתחברות...');
-
-            setTimeout(() => {
-                navigate('/login', {
-                    state: {
-                        message: 'ההרשמה הושלמה בהצלחה, אנא התחבר עם פרטי החשבון שלך',
-                        email: formData.email
-                    }
-                });
-            }, 2000);
-
         } catch (err) {
-            console.error('Registration error:', err);
-            if (err.response?.data?.message) {
-                setErrors([err.response.data.message]);
-            } else if (err.message.includes('duplicate key error')) {
-                setErrors(['כתובת האימייל כבר קיימת במערכת']);
-            } else {
-                setErrors(['אירעה שגיאה בתהליך ההרשמה, אנא נסה שוב']);
-            }
-        } finally {
-            setIsLoading(false);
+            console.error('Registration error details:', err);
+            const errorMessage = err.response?.data?.message || err.message;
+            setErrors([errorMessage]);
         }
     };
 
